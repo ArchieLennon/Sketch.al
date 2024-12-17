@@ -5,7 +5,7 @@ import Title from "./Componants/Title"
 
 
 
-import { client } from "/Users/archielennnon/Desktop/rollodex copy 4/app/lib/sanity"
+import { client } from "../app/lib/sanity"
 import motion from "@/sanity/schemaTypes/motion";
 
 
