@@ -1,43 +1,31 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import p5 from 'p5';
 
-interface P5SketchProps {
-  // Add props if you need to pass data into the sketch
-}
-
-const P5Sketch: React.FC<P5SketchProps> = () => {
+const P5Sketch: React.FC = () => {
   const sketchRef = useRef<HTMLDivElement>(null);
 
   const words = ["Sketch.al"];
-  const fSize = useRef(310); // Font size, mutable for mobile adjustment
-  const ease = 0.3;
   const date = new Date().toDateString().toUpperCase();
-  const objectSize = useRef(28); // Default size for objects
-  const textSize = useRef(16); // Default text size
+  const fSize = useRef(310);
+  const objectSize = useRef(28);
+  const textSize = useRef(16);
 
-  const myFont = useRef<any>(null); // Ref for custom font
-  const points = useRef<any[]>([]); // Ref for storing text points
-  const textBox = useRef<any>(null); // Ref for bounding box dimensions
-  const objects = useRef<
-    {
-      x: number;
-      y: number;
-      size: number;
-      originalSize: number;
-      sizeOffset: number;
-      hovered: boolean;
-    }[]
-  >([]);
+  const myFont = useRef<any>(null);
+  const points = useRef<any[]>([]);
+  const textBox = useRef<any>(null);
+  const objects = useRef<any[]>([]);
+  const ease = 0.3;
 
   const isMobile = () => window.innerWidth <= 768;
 
-  const adjustForMobile = () => {
+  // Memoize the function to avoid unnecessary re-creations
+  const adjustForMobile = useCallback(() => {
     if (isMobile()) {
-      fSize.current = 110; // Adjust font size for mobile
-      objectSize.current = 13; // Adjust object size for mobile
-      textSize.current = 8; // Adjust text size for mobile
+      fSize.current = 110;
+      objectSize.current = 13;
+      textSize.current = 8;
     }
-  };
+  }, []);
 
   useEffect(() => {
     adjustForMobile();
@@ -50,16 +38,14 @@ const P5Sketch: React.FC<P5SketchProps> = () => {
       p.setup = () => {
         p.createCanvas(p.windowWidth, p.windowHeight);
 
-        // Generate points for the text
         points.current = myFont.current.textToPoints(
-          p.random(words),
+          p.random(words), // Safe to use `words` here
           0,
           0,
           fSize.current,
-          { sampleFactor: 0.08 } // Reduce number of points
+          { sampleFactor: 0.08 }
         );
 
-        // Initialize objects based on points
         objects.current = points.current.map((pt) => ({
           x: pt.x + p.width / 2 - fSize.current * 1.75,
           y: pt.y + p.height / 2 + 100,
@@ -69,7 +55,6 @@ const P5Sketch: React.FC<P5SketchProps> = () => {
           hovered: false,
         }));
 
-        // Get bounding box for text
         textBox.current = myFont.current.textBounds(
           words[0],
           0,
@@ -77,13 +62,12 @@ const P5Sketch: React.FC<P5SketchProps> = () => {
           fSize.current
         );
 
-        p.frameRate(30); // Smoother visuals
+        p.frameRate(30);
       };
 
       p.draw = () => {
         p.background(0);
 
-        // Display mouse coordinates and date
         p.textSize(textSize.current);
         p.textStyle(p.NORMAL);
         p.fill(255, 255, 255);
@@ -91,7 +75,6 @@ const P5Sketch: React.FC<P5SketchProps> = () => {
         p.text(`${date}`, 8, 40);
         p.text(`DIGITAL SKETCHBOOK:  @Archie_Lennon`, 8, 60);
 
-        // Check hover state for each object
         objects.current.forEach((obj) => {
           obj.hovered =
             p.mouseX > obj.x - obj.size / 2 &&
@@ -100,7 +83,6 @@ const P5Sketch: React.FC<P5SketchProps> = () => {
             p.mouseY < obj.y + obj.size / 2;
         });
 
-        // Smoothly animate object sizes
         objects.current.forEach((obj) => {
           const targetSize = obj.hovered
             ? obj.originalSize + obj.sizeOffset
@@ -119,10 +101,11 @@ const P5Sketch: React.FC<P5SketchProps> = () => {
     const p5Instance = new p5(sketch, sketchRef.current!);
 
     return () => {
-      // Cleanup p5 instance
       p5Instance.remove();
     };
-  }, []);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjustForMobile]); // Only `adjustForMobile` is a dependency
 
   return <div ref={sketchRef} />;
 };
